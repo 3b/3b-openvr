@@ -1,6 +1,9 @@
 (in-package 3b-openvr)
 
 ;; fixme: configurable paths (or detect from registry or whatever?)
+;; actually, docs say to ship your own copy, so possibly should pull
+;; in the binaries from valve's openvr repo.
+;; (https://github.com/ValveSoftware/openvr/blob/master/src/README)
 #+ (and windows x86-64)
 (pushnew #P"c:/Program Files (x86)/Steam/steamapps/common/SteamVR/bin/win64/"
          cffi:*foreign-library-directories*
