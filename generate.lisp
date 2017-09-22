@@ -173,7 +173,12 @@
         do (format t "(defconstant +~a+ ~a) ;; ~a~%" ;
                    name value type)))
 
-;;; todo: see if any of these should be bitfields
+;;; todo: see if any more of these should be bitfields
+(defparameter *bitfields*
+  (alexandria:plist-hash-table
+   '("vr-submit-flags" t)
+   :test 'equal))
+
 (defun enums ()
   (loop for d in (cdr (assoc :enums *openvr-api*))
         for .name = (cdr (assoc :enumname d))
@@ -182,7 +187,9 @@
         for prefix = (enum-prefix .name
                                   (mapcar (lambda (a) (cdr (assoc :name a)))
                                           values))
-        do (format t "(defcenum ~a" name)
+        do (if (gethash name *bitfields*)
+               (format t "(defbitfield ~a" name)
+               (format t "(defcenum ~a" name))
            (loop for e in values
                  for .n = (cdr (assoc :name e))
                  for n = (fix-name (subseq .n prefix))
@@ -353,6 +360,7 @@
                  (format t "(defpackage ~a~%  (:use :cl)~%" *package-name*)
                  (format t "  (:import-from #:cffi~{~%    #:~a~})"
                          '(defcenum defcfun defctype defcstruct defcunion
+                           defbitfield null-pointer
                            foreign-funcall-pointer))
                  (format t ")~%(in-package ~a)~%~%" *package-name*)
                  (format t "~%~%")

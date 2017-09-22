@@ -7,6 +7,8 @@
     #:DEFCTYPE
     #:DEFCSTRUCT
     #:DEFCUNION
+    #:DEFBITFIELD
+    #:NULL-POINTER
     #:FOREIGN-FUNCALL-POINTER))
 (in-package 3b-openvr)
 
@@ -373,7 +375,7 @@
   (:permission-denied 10)
   (:invalid-operation 11))
 
-(defcenum vr-submit-flags
+(defbitfield vr-submit-flags
   (:default 0)
   (:lens-distortion-already-applied 1)
   (:gl-render-buffer 2)
