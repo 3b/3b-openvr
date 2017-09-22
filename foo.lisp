@@ -18,4 +18,18 @@
                                  +tracked-device-index-hmd+
                                  i)))
         do (format t "~(~s~) = ~a~%" i (if (cadr p)
-                                           (cadr p) (car p)))))
+                                           (cadr p) (car p))))
+  (loop repeat 10
+        do (loop for ev = (poll-next-event)
+                 for i from 0
+                 while ev
+                 do (format t "got event ~s:~% ~s~%" i ev))
+
+           ;; process SteamVR controller state
+           (loop for device below +max-tracked-device-count+
+                 for state = (get-controller-state device)
+                 when state
+                   do (format t "got controller ~s: ~s~%"
+                              device state))
+           (sleep 1)))
+

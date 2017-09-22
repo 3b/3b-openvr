@@ -2,7 +2,17 @@
 
 (defvar *%init*)
 (defvar *system*)
+(defvar *chaperone*)
+(defvar *chaperone-setup*)
+(defvar *compositor*)
+(defvar *overlay*)
 (defvar *render-models*)
+(defvar *extended-display*)
+(defvar *settings*)
+(defvar *applications*)
+(defvar *tracked-camera*)
+(defvar *resources*)
+(defvar *screenshots*)
 
 (defmethod cffi:translate-from-foreign (value (type hmd-matrix-34-t-tclass))
   (let ((a (make-array 16 :element-type 'single-float :initial-element 0.0)))
@@ -12,13 +22,170 @@
                             (cffi:mem-aref value :float (+ (* i 4) j)))))
     a))
 
+;;; fixme: replace this with map to functions instead of types, so
+;;; they don't need runtime dispatch in cffi
+(defparameter *event-type-map* ;; indexed by event-type
+  ;; todo: verify + figure out more of these
+  (alexandria:plist-hash-table
+   '(:none nil
+     :tracked-device-activated nil
+     :tracked-device-deactivated nil
+     :tracked-device-updated nil
+     :tracked-device-user-interaction-started nil
+     :tracked-device-user-interaction-ended nil
+     :ipd-changed nil
+     :enter-standby-mode nil
+     :leave-standby-mode nil
+     :tracked-device-role-changed nil
+     :watchdog-wake-up-requested nil
+     :lens-distortion-changed nil
+     :property-changed nil
+     :wireless-disconnect nil
+     :wireless-reconnect nil
+     :button-press (:struct vr-event-controller-t)
+     :button-unpress (:struct vr-event-controller-t)
+     :button-touch (:struct vr-event-controller-t)
+     :button-untouch (:struct vr-event-controller-t)
+     :mouse-move (:struct vr-event-mouse-t)
+     :mouse-button-down (:struct vr-event-mouse-t)
+     :mouse-button-up (:struct vr-event-mouse-t)
+     :focus-enter (:struct vr-event-overlay-t)
+     :focus-leave (:struct vr-event-overlay-t)
+     :scroll (:struct vr-event-mouse-t)
+     :touch-pad-move (:struct vr-event-mouse-t)
+     :overlay-focus-changed (:struct vr-event-process-t)
+     :input-focus-captured (:struct vr-event-process-t)
+     :input-focus-released (:struct vr-event-process-t)
+     :scene-focus-lost (:struct vr-event-process-t)
+     :scene-focus-gained (:struct vr-event-process-t)
+     :scene-application-changed (:struct vr-event-process-t)
+     :scene-focus-changed (:struct vr-event-process-t)
+     :input-focus-changed (:struct vr-event-process-t)
+     :scene-application-secondary-rendering-started (:struct vr-event-process-t)
+     :hide-render-models nil
+     :show-render-models nil
+     :overlay-shown nil
+     :overlay-hidden nil
+     :dashboard-activated nil
+     :dashboard-deactivated nil
+     :dashboard-thumb-selected (:struct vr-event-overlay-t)
+     :dashboard-requested (:struct vr-event-overlay-t)
+     :reset-dashboard nil
+     :render-toast (:struct vr-event-notification-t) ;;?
+     :image-loaded nil
+     :show-keyboard nil
+     :hide-keyboard nil
+     :overlay-gamepad-focus-gained nil
+     :overlay-gamepad-focus-lost nil
+     :overlay-shared-texture-changed nil
+     :dashboard-guide-button-down nil
+     :dashboard-guide-button-up nil
+     :screenshot-triggered nil
+     :image-failed nil
+     :dashboard-overlay-created nil
+     :request-screenshot nil
+     :screenshot-taken nil
+     :screenshot-failed nil
+     :submit-screenshot-to-dashboard nil
+     :screenshot-progress-to-dashboard nil
+     :primary-dashboard-device-changed nil
+     :notification-shown nil
+     :notification-hidden nil
+     :notification-begin-interaction nil
+     :notification-destroyed nil
+     :quit (:struct vr-event-process-t)
+     :process-quit (:struct vr-event-process-t)
+     :quit-aborted-user-prompt (:struct vr-event-process-t)
+     :quit-acknowledged (:struct vr-event-process-t)
+     :driver-requested-quit nil
+     :chaperone-data-has-changed nil
+     :chaperone-universe-has-changed nil
+     :chaperone-temp-data-has-changed nil
+     :chaperone-settings-have-changed nil
+     :seated-zero-pose-reset nil
+     :audio-settings-have-changed nil
+     :background-setting-has-changed nil
+     :camera-settings-have-changed nil
+     :reprojection-setting-has-changed nil
+     :model-skin-settings-have-changed nil
+     :environment-settings-have-changed nil
+     :power-settings-have-changed nil
+     :enable-home-app-settings-have-changed nil
+     :status-update nil
+     :mcimage-updated nil
+     :firmware-update-started nil
+     :firmware-update-finished nil
+     :keyboard-closed nil
+     :keyboard-char-input nil
+     :keyboard-done nil
+     :application-transition-started nil
+     :application-transition-aborted nil
+     :application-transition-new-app-started nil
+     :application-list-updated nil
+     :application-mime-type-load nil
+     :application-transition-new-app-launch-complete nil
+     :process-connected nil
+     :process-disconnected nil
+     :compositor-mirror-window-shown nil
+     :compositor-mirror-window-hidden nil
+     :compositor-chaperone-bounds-shown nil
+     :compositor-chaperone-bounds-hidden nil
+     :tracked-camera-start-video-stream nil
+     :tracked-camera-stop-video-stream nil
+     :tracked-camera-pause-video-stream nil
+     :tracked-camera-resume-video-stream nil
+     :tracked-camera-editing-surface nil
+     :performance-test-enable-capture nil
+     :performance-test-disable-capture nil
+     :performance-test-fidelity-level nil
+     :message-overlay-closed nil
+     :message-overlay-close-requested nil
+     :vendor-specific-reserved-start nil
+     :vendor-specific-reserved-end nil)))
+
+(defmethod cffi:translate-from-foreign (value (type vr-event-t-tclass))
+  (let* ((type (cffi:foreign-enum-keyword
+                'vr-event-type
+                (cffi:foreign-slot-value value '(:struct vr-event-t)
+                                         'event-type)))
+         (union (gethash type *event-type-map*))
+         (tracked-device-index (cffi:foreign-slot-value value
+                                                        '(:struct vr-event-t)
+                                                        'tracked-device-index))
+         (event-age-seconds (cffi:foreign-slot-value value
+                                                     '(:struct vr-event-t)
+                                                     'event-age-seconds))
+         (offset (cffi:foreign-slot-offset '(:struct vr-event-t) 'data))
+         (size (cffi:foreign-type-size '(:struct vr-event-t)))
+         (data (if union
+                   (cffi:mem-ref
+                    (cffi:foreign-slot-pointer value '(:struct vr-event-t)
+                                               'data)
+                    union)
+                   (coerce
+                    (loop for i from offset below size
+                          collect (cffi:mem-aref value :uint8 i))
+                    '(simple-array (unsigned-byte 8) (*))))))
+    (list :event-type type
+          :tracked-device-index tracked-device-index
+          :event-age-seconds event-age-seconds
+          :data data)))
+
 (cffi:defcfun (%vr-init-internal "VR_InitInternal") :intptr
   (pe-error (:pointer vr-init-error))
   (type vr-application-type))
 
+(cffi:defcfun (%vr-init-internal "VR_InitInternal2") :intptr
+  (pe-error (:pointer vr-init-error))
+  (type vr-application-type)
+  (startup-info :string))
+
 (cffi:defcfun (vr-shutdown-internal "VR_ShutdownInternal") :void)
 
 (cffi:defcfun (vr-is-hmd-present "VR_IsHmdPresent") :bool)
+
+(cffi:defcfun (vr-get-init-token "VR_GetInitToken") :uint32)
+
 
 (cffi:defcfun (%vr-get-generic-interface "VR_GetGenericInterface") :intptr
   (pch-Interface-Version :string)
@@ -62,12 +229,116 @@
       (format t " = #x~x~%" r)
       (cffi:make-pointer r))))
 
-(defmacro with-vr ((&key (application-type :scene)) &body body)
+(defun clear ()
+  (setf *system* nil)
+  (setf *chaperone* nil)
+  (setf *chaperone-setup* nil)
+  (setf *compositor* nil)
+  (setf *overlay* nil)
+  (setf *render-models* nil)
+  (setf *extended-display* nil)
+  (setf *settings* nil)
+  (setf *applications* nil)
+  (setf *tracked-camera* nil)
+  (setf *resources* nil)
+  (setf *screenshots* nil))
+
+(defun check-clear ()
+  (unless (eql *%init* (vr-get-init-token))
+    (clear)
+    (setf *%init* (vr-get-init-token))))
+
+(defun vr-system ()
+  (check-clear)
+  (unless *system*
+    (setf *system* (make-instance 'vr-system)))
+  *system*)
+
+(defun vr-chaperone ()
+  (check-clear)
+  (unless *chaperone*
+    (setf *chaperone* (make-instance 'vr-chaperone)))
+  *chaperone*)
+
+(defun vr-chaperone-setup ()
+  (check-clear)
+  (unless *chaperone-setup*
+    (setf *chaperone-setup* (make-instance 'vr-chaperone-setup)))
+  *chaperone-setup*)
+
+(defun vr-compositor ()
+  (check-clear)
+  (unless *compositor*
+    (setf *compositor* (make-instance 'vr-compositor)))
+  *compositor*)
+
+(defun vr-overlay ()
+  (check-clear)
+  (unless *overlay*
+    (setf *overlay* (make-instance 'vr-overlay)))
+  *overlay*)
+
+(defun vr-render-models ()
+  (check-clear)
+  (unless *render-models*
+    (setf *render-models* (make-instance 'vr-render-models)))
+  *render-models*)
+
+(defun vr-extended-display ()
+  (check-clear)
+  (unless *extended-display*
+    (setf *extended-display* (make-instance 'vr-extended-display)))
+  *extended-display*)
+
+(defun vr-settings ()
+  (check-clear)
+  (unless *settings*
+    (setf *settings* (make-instance 'vr-settings)))
+  *settings*)
+
+(defun vr-applications ()
+  (check-clear)
+  (unless *applications*
+    (setf *applications* (make-instance 'vr-applications)))
+  *applications*)
+
+(defun vr-tracked-camera ()
+  (check-clear)
+  (unless *tracked-camera*
+    (setf *tracked-camera* (make-instance 'vr-tracked-camera)))
+  *tracked-camera*)
+
+(defun vr-resources ()
+  (check-clear)
+  (unless *resources*
+    (setf *resources* (make-instance 'vr-resources)))
+  *resources*)
+
+(defun vr-screenshots ()
+  (check-clear)
+  (unless *screenshots*
+    (setf *screenshots* (make-instance 'vr-screenshots)))
+  *screenshots*)
+
+(defmacro with-vr ((&key (application-type :scene)
+                      (system t) (render-models t)) &body body)
   `(let ((*%init* (vr-init ,application-type))
-         (*system* (make-instance 'vr-system))
-         (*render-models* (make-instance 'vr-render-models)))
+         (*system* nil)
+         (*chaperone* nil)
+         (*chaperone-setup* nil)
+         (*compositor* nil)
+         (*overlay* nil)
+         (*render-models* nil)
+         (*extended-display* nil)
+         (*settings* nil)
+         (*applications* nil)
+         (*tracked-camera* nil)
+         (*resources* nil)
+         (*screenshots* nil))
      (unwind-protect
-          (progn ,@body)
+          (progn ,@(when system '((vr-system)))
+                 ,@(when render-models '((vr-render-models)))
+                 ,@body)
        (vr-shutdown-internal))))
 
 #++
@@ -179,3 +450,90 @@
              (alexandria:ends-with-subseq "-END" sprop))
          nil)
         (t (error "unknown prop type ~s?" prop))))))
+
+
+;;; vr-system methods
+(defun poll-next-event (&key (system *system*))
+  (cffi:with-foreign-object (ev '(:struct vr-event-t))
+    (when (print
+           (%poll-next-event (table system) ev (cffi:foreign-type-size
+                                                '(:struct vr-event-t))))
+      (let ((R (multiple-value-list
+                (ignore-errors
+                 (cffi:mem-ref ev '(:struct vr-event-t))))))
+        (when (second r)
+          (format t "~&~a?~%" (second r))
+          (loop for i below 40
+                do (format t " #~2,'0x" (cffi:mem-aref ev :uint8 i))
+                when (zerop (mod (1+ i) 8))
+                  do (format t "~%")))
+        r))))
+
+(defun get-controller-state (device &key (system *system*))
+  (cffi:with-foreign-object (state '(:struct vr-controller-state-001-t))
+    (when (%get-controller-state (table system) device state
+                                 (cffi:foreign-type-size
+                                  '(:struct vr-controller-state-001-t)))
+      (cffi:mem-ref state '(:struct vr-controller-state-001-t)))))
+
+(defun is-tracked-device-connected (index &key (system *system*))
+  (%is-tracked-device-connected (table system) index))
+
+(defun get-tracked-device-class (index &key (system *system*))
+  (%get-tracked-device-class (table system) index))
+
+(defun get-recommended-render-target-size (&key (system *system*))
+  (cffi:with-foreign-objects ((w :uint32)
+                              (h :uint32))
+    (%get-recommended-render-target-size (table system) w h)
+    ;; should this return list, values, or some struct/class or something?
+    (list (cffi:mem-ref w :uint32)
+          (cffi:mem-ref h :uint32))))
+
+;;; vr-extended-display methods
+
+;;; vr-tracked-camera methods
+
+;;; vr-applications methods
+
+;;; vr-chaperone methods
+
+;;; vr-chaperone-setup methods
+
+;;; vr-compositor methods
+(defun submit (eye texture &key (compositor *compositor*)
+                             bounds (flags :default))
+  (cffi:with-foreign-objects ((ptexture '(:struct texture-t))
+                              (pbounds '(:struct vr-texture-bounds-t)))
+    (when (numberp (getf texture 'handle))
+      (setf (getf texture 'handle) (cffi:make-pointer (getf texture 'handle))))
+    (setf (cffi:mem-ref ptexture '(:struct texture-t)) texture)
+    (when bounds
+      (setf (cffi:mem-ref pbounds '(:struct vr-texture-bounds-t)) bounds))
+    (%submit (table compositor) eye ptexture (if bounds
+                                                 pbounds
+                                                 (cffi:null-pointer))
+             (alexandria:ensure-list flags))))
+
+
+;;; vr-overlay methods
+
+;;; vr-render-models methods
+(defun free-render-model (render-model &key (render-models *render-models*))
+  (%free-render-model (table render-models) render-model))
+
+;;; vr-notifications methods
+
+;;; vr-settings methods
+
+;;; vr-screenshots methods
+
+;;; vr-resources methods
+
+;;; vr-driver-manager methods
+
+
+
+
+
+
