@@ -20,6 +20,14 @@
           do (loop for i below 3
                    do (setf (aref a (+ (* j 4) i))
                             (cffi:mem-aref value :float (+ (* i 4) j)))))
+    (setf (aref a 15) 1.0)
+    a))
+
+(defmethod cffi:translate-from-foreign (value (type hmd-matrix-44-t-tclass))
+  (let ((a (make-array 16 :element-type 'single-float :initial-element 0.0)))
+    (dotimes (j 4)
+      (dotimes (i 4)
+        (setf (aref a (+ i (* j 4))) (cffi:mem-aref value :float (+ j (* i 4))))))
     a))
 
 ;;; fixme: replace this with map to functions instead of types, so
@@ -175,7 +183,7 @@
   (pe-error (:pointer vr-init-error))
   (type vr-application-type))
 
-(cffi:defcfun (%vr-init-internal "VR_InitInternal2") :intptr
+(cffi:defcfun (%vr-init-internal2 "VR_InitInternal2") :intptr
   (pe-error (:pointer vr-init-error))
   (type vr-application-type)
   (startup-info :string))
@@ -369,6 +377,11 @@
                        val))))
        ,@body)))
 
+(defmacro check-ret (call &key (ok '(:success :none)))
+  `(let ((r ,call))
+     (unless (member r ',ok)
+       (error "~a failed: ~a" ',(car call) r))
+     r))
 
 (defun get-string-tracked-device-property (device-index prop &key (system *system*))
   (with-error (pe tracked-property-error)
@@ -455,9 +468,8 @@
 ;;; vr-system methods
 (defun poll-next-event (&key (system *system*))
   (cffi:with-foreign-object (ev '(:struct vr-event-t))
-    (when (print
-           (%poll-next-event (table system) ev (cffi:foreign-type-size
-                                                '(:struct vr-event-t))))
+    (when (%poll-next-event (table system) ev (cffi:foreign-type-size
+                                               '(:struct vr-event-t)))
       (let ((R (multiple-value-list
                 (ignore-errors
                  (cffi:mem-ref ev '(:struct vr-event-t))))))
@@ -467,7 +479,7 @@
                 do (format t " #~2,'0x" (cffi:mem-aref ev :uint8 i))
                 when (zerop (mod (1+ i) 8))
                   do (format t "~%")))
-        r))))
+        (first r)))))
 
 (defun get-controller-state (device &key (system *system*))
   (cffi:with-foreign-object (state '(:struct vr-controller-state-001-t))
@@ -489,6 +501,15 @@
     ;; should this return list, values, or some struct/class or something?
     (list (cffi:mem-ref w :uint32)
           (cffi:mem-ref h :uint32))))
+
+(defun get-projection-matrix (eye near far &key (system *system*))
+  (%get-projection-matrix (table system) eye near far))
+
+(defun get-eye-to-head-transform (eye &key (system *system*))
+  (%get-eye-to-head-transform (table system) eye))
+
+(defun is-input-focus-captured-by-another-process (&key (system *system*))
+  (%is-input-focus-captured-by-another-process (table system)))
 
 ;;; vr-extended-display methods
 
@@ -515,12 +536,76 @@
                                                  (cffi:null-pointer))
              (alexandria:ensure-list flags))))
 
+(defun wait-get-poses  (pose-array game-pose-array
+                        &key (compositor *compositor*))
+  (cffi:with-foreign-objects ((ppa '(:struct tracked-device-pose-t)
+                                   (length pose-array))
+                              (pgpa '(:struct tracked-device-pose-t)
+                                    (length game-pose-array)))
+    (check-ret
+     (%wait-get-poses (table compositor)
+                      (if pose-array ppa (null-pointer))
+                      (length pose-array)
+                      (if game-pose-array pgpa (null-pointer))
+                      (length game-pose-array)))
+    (loop for i below (length pose-array)
+          for p = (cffi:mem-aptr ppa '(:struct tracked-device-pose-t) i)
+          do (setf (aref pose-array i)
+                   (if (cffi:foreign-slot-value p
+                                                '(:struct tracked-device-pose-t)
+                                                'pose-is-valid)
+                       (cffi:mem-ref p '(:struct tracked-device-pose-t))
+                       (list 'pose-is-valid nil))))
+
+    (loop for i below (length game-pose-array)
+          for p = (cffi:mem-aptr pgpa '(:struct tracked-device-pose-t) i)
+          do (setf (aref game-pose-array i)
+                   (if (cffi:foreign-slot-value p
+                                                '(:struct tracked-device-pose-t)
+                                                'pose-is-valid)
+                       (cffi:mem-ref p '(:struct tracked-device-pose-t))
+                       (list 'pose-is-valid nil))))))
+
 
 ;;; vr-overlay methods
 
 ;;; vr-render-models methods
-(defun free-render-model (render-model &key (render-models *render-models*))
-  (%free-render-model (table render-models) render-model))
+(defun load-render-model-async (name &key (render-models *render-models*))
+  (cffi:with-foreign-object (prm '(:pointer (:struct render-model-t)))
+    (let ((r (check-ret
+              (%load-render-model-async (table render-models) name prm)
+              :ok (:none :loading))))
+      ;; return NIL to indicate :loading for now. possibly should
+      ;; error w/restarts, but that sounds annoying for general case,
+      ;; since :loading is probably most common return value.
+      (when (eql r :none)
+        (cffi:mem-ref
+         (cffi:mem-ref prm '(:pointer (:struct render-model-t)))
+         '(:struct render-model-t))))))
+
+(defun load-texture-async (name &key (render-models *render-models*))
+  (cffi:with-foreign-object (prmt '(:pointer
+                                    (:struct render-model-texture-map-t)))
+    (let ((r (check-ret
+              (%load-texture-async (table render-models) name prmt)
+              :ok (:none :loading))))
+      ;; return NIL for :loading
+      (when (eql r :none)
+        (cffi:mem-ref
+         (cffi:mem-ref prmt '(:pointer (:struct render-model-texture-map-t)))
+         '(:struct render-model-texture-map-t))))))
+
+(defun free-render-model (model &key (render-models *render-models*))
+  (cffi:with-foreign-object (prm '(:struct render-model-t))
+    (setf (cffi:mem-ref prm '(:struct render-model-t))
+          model)
+    (%free-render-model (table render-models) prm)))
+
+(defun free-texture (texture &key (render-models *render-models*))
+  (cffi:with-foreign-object (prmt '(:struct render-model-texture-map-t))
+    (setf (cffi:mem-ref prmt '(:struct render-model-texture-map-t))
+          texture)
+    (%free-texture (table render-models) prmt)))
 
 ;;; vr-notifications methods
 
