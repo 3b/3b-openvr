@@ -1,6 +1,7 @@
-#++ (ql:quickload '(alexandria cffi 3bgl-misc sb-cga trivial-features))
+#++ (ql:quickload '(sb-cga 3b-openvr))
 (in-package 3b-openvr)
 
+#++
 (with-vr ()
   (format t "running ~s, ~s...~%" *system* *render-models*)
   (format t "driver = ~s~%" (get-string-tracked-device-property
