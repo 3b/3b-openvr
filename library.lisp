@@ -17,6 +17,8 @@
 ;; todo: figure out library name/path on linux/osx
 
 (cffi:define-foreign-library openvr-api
-  (:windows "openvr_api.dll"))
+  (:windows "openvr_api.dll")
+  (:linux "libopenvr_api.so")
+  (:darwin "libopenvr_api.dylib"))
 
 (cffi:use-foreign-library openvr-api)
