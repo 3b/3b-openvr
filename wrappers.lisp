@@ -221,7 +221,6 @@
                  (vr-get-init-error-as-symbol e))))))
 
 (defun vr-get-generic-interface (name &key (table t))
-  (format t "get-generic-interface ~s~%" name)
   (cffi:with-foreign-object (pe 'vr-init-error)
     (let* ((name (if table
                      (format nil "~a~a" +function-table-prefix+ name)

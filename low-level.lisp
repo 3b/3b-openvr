@@ -1298,14 +1298,13 @@
 
 
 
- (defclass vr-system ()
-   ((table :reader table)))
+(defclass vr-system ()
+  ((table :reader table)))
 (defmethod initialize-instance :after ((o vr-system) &key)
   (let ((p (vr-get-generic-interface +vr-system-version+)))
     (setf (slot-value o 'table) (make-array 45))
     (loop for i below 45
-          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))
-    (format t "loaded function table for ~s = ~s~%" 'vr-system (table o))))
+          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))))
 (defun %get-recommended-render-target-size (table pnWidth pnHeight)
   (foreign-funcall-pointer (aref table 0) nil (:pointer :uint32) pnwidth
                            (:pointer :uint32) pnheight :void))
@@ -1511,15 +1510,13 @@
 (defun %acknowledge-quit-user-prompt (table)
   (foreign-funcall-pointer (aref table 44) nil :void))
 
- (defclass vr-extended-display ()
-   ((table :reader table)))
+(defclass vr-extended-display ()
+  ((table :reader table)))
 (defmethod initialize-instance :after ((o vr-extended-display) &key)
   (let ((p (vr-get-generic-interface +vr-extended-display-version+)))
     (setf (slot-value o 'table) (make-array 3))
     (loop for i below 3
-          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))
-    (format t "loaded function table for ~s = ~s~%" 'vr-extended-display
-            (table o))))
+          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))))
 (defun %get-window-bounds (table pnX pnY pnWidth pnHeight)
   (foreign-funcall-pointer (aref table 0) nil (:pointer :int32) pnx
                            (:pointer :int32) pny (:pointer :uint32) pnwidth
@@ -1534,15 +1531,13 @@
   (foreign-funcall-pointer (aref table 2) nil (:pointer :int32) pnadapterindex
                            (:pointer :int32) pnadapteroutputindex :void))
 
- (defclass vr-tracked-camera ()
-   ((table :reader table)))
+(defclass vr-tracked-camera ()
+  ((table :reader table)))
 (defmethod initialize-instance :after ((o vr-tracked-camera) &key)
   (let ((p (vr-get-generic-interface +vr-tracked-camera-version+)))
     (setf (slot-value o 'table) (make-array 12))
     (loop for i below 12
-          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))
-    (format t "loaded function table for ~s = ~s~%" 'vr-tracked-camera
-            (table o))))
+          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))))
 (defun %get-camera-error-name-from-enum (table eCameraError)
   (foreign-funcall-pointer (aref table 0) nil vr-tracked-camera-error
                            ecameraerror :string))
@@ -1620,15 +1615,13 @@
                            htrackedcamera gl-uint-t gltextureid
                            vr-tracked-camera-error))
 
- (defclass vr-applications ()
-   ((table :reader table)))
+(defclass vr-applications ()
+  ((table :reader table)))
 (defmethod initialize-instance :after ((o vr-applications) &key)
   (let ((p (vr-get-generic-interface +vr-applications-version+)))
     (setf (slot-value o 'table) (make-array 31))
     (loop for i below 31
-          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))
-    (format t "loaded function table for ~s = ~s~%" 'vr-applications
-            (table o))))
+          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))))
 (defun %add-application-manifest (table pchApplicationManifestFullPath bTemporary)
   (foreign-funcall-pointer (aref table 0) nil :string
                            pchapplicationmanifestfullpath :bool btemporary
@@ -1757,14 +1750,13 @@
 (defun %get-current-scene-process-id (table)
   (foreign-funcall-pointer (aref table 30) nil :uint32))
 
- (defclass vr-chaperone ()
-   ((table :reader table)))
+(defclass vr-chaperone ()
+  ((table :reader table)))
 (defmethod initialize-instance :after ((o vr-chaperone) &key)
   (let ((p (vr-get-generic-interface +vr-chaperone-version+)))
     (setf (slot-value o 'table) (make-array 8))
     (loop for i below 8
-          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))
-    (format t "loaded function table for ~s = ~s~%" 'vr-chaperone (table o))))
+          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))))
 (defun %get-calibration-state (table)
   (foreign-funcall-pointer (aref table 0) nil chaperone-calibration-state))
 
@@ -1795,15 +1787,13 @@
 (defun %force-bounds-visible (table bForce)
   (foreign-funcall-pointer (aref table 7) nil :bool bforce :void))
 
- (defclass vr-chaperone-setup ()
-   ((table :reader table)))
+(defclass vr-chaperone-setup ()
+  ((table :reader table)))
 (defmethod initialize-instance :after ((o vr-chaperone-setup) &key)
   (let ((p (vr-get-generic-interface +vr-chaperone-setup-version+)))
     (setf (slot-value o 'table) (make-array 20))
     (loop for i below 20
-          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))
-    (format t "loaded function table for ~s = ~s~%" 'vr-chaperone-setup
-            (table o))))
+          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))))
 (defun %commit-working-copy (table configFile)
   (foreign-funcall-pointer (aref table 0) nil chaperone-config-file configfile
                            :bool))
@@ -1887,14 +1877,13 @@
   (foreign-funcall-pointer (aref table 19) nil :string pbuffer :uint32
                            nimportflags :bool))
 
- (defclass vr-compositor ()
-   ((table :reader table)))
+(defclass vr-compositor ()
+  ((table :reader table)))
 (defmethod initialize-instance :after ((o vr-compositor) &key)
   (let ((p (vr-get-generic-interface +vr-compositor-version+)))
     (setf (slot-value o 'table) (make-array 43))
     (loop for i below 43
-          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))
-    (format t "loaded function table for ~s = ~s~%" 'vr-compositor (table o))))
+          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))))
 (defun %set-tracking-space (table eOrigin)
   (foreign-funcall-pointer (aref table 0) nil tracking-universe-origin eorigin
                            :void))
@@ -2067,14 +2056,13 @@
 (defun %submit-explicit-timing-data (table)
   (foreign-funcall-pointer (aref table 42) nil vr-compositor-error))
 
- (defclass vr-overlay ()
-   ((table :reader table)))
+(defclass vr-overlay ()
+  ((table :reader table)))
 (defmethod initialize-instance :after ((o vr-overlay) &key)
   (let ((p (vr-get-generic-interface +vr-overlay-version+)))
     (setf (slot-value o 'table) (make-array 81))
     (loop for i below 81
-          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))
-    (format t "loaded function table for ~s = ~s~%" 'vr-overlay (table o))))
+          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))))
 (defun %find-overlay (table pchOverlayKey pOverlayHandle)
   (foreign-funcall-pointer (aref table 0) nil :string pchoverlaykey
                            (:pointer vr-overlay-handle-t) poverlayhandle
@@ -2490,15 +2478,13 @@
 (defun %close-message-overlay (table)
   (foreign-funcall-pointer (aref table 80) nil :void))
 
- (defclass vr-render-models ()
-   ((table :reader table)))
+(defclass vr-render-models ()
+  ((table :reader table)))
 (defmethod initialize-instance :after ((o vr-render-models) &key)
   (let ((p (vr-get-generic-interface +vr-render-models-version+)))
     (setf (slot-value o 'table) (make-array 18))
     (loop for i below 18
-          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))
-    (format t "loaded function table for ~s = ~s~%" 'vr-render-models
-            (table o))))
+          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))))
 (defun %load-render-model-async (table pchRenderModelName ppRenderModel)
   (foreign-funcall-pointer (aref table 0) nil :string pchrendermodelname
                            (:pointer (:struct render-model-t)) pprendermodel
@@ -2587,15 +2573,13 @@
   (foreign-funcall-pointer (aref table 17) nil vr-render-model-error error
                            :string))
 
- (defclass vr-notifications ()
-   ((table :reader table)))
+(defclass vr-notifications ()
+  ((table :reader table)))
 (defmethod initialize-instance :after ((o vr-notifications) &key)
   (let ((p (vr-get-generic-interface +vr-notifications-version+)))
     (setf (slot-value o 'table) (make-array 2))
     (loop for i below 2
-          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))
-    (format t "loaded function table for ~s = ~s~%" 'vr-notifications
-            (table o))))
+          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))))
 (defun %create-notification (table ulOverlayHandle ulUserValue type pchText style pImage pNotificationId)
   (foreign-funcall-pointer (aref table 0) nil vr-overlay-handle-t
                            uloverlayhandle :uint64 uluservalue
@@ -2609,14 +2593,13 @@
   (foreign-funcall-pointer (aref table 1) nil vr-notification-id notificationid
                            vr-notification-error))
 
- (defclass vr-settings ()
-   ((table :reader table)))
+(defclass vr-settings ()
+  ((table :reader table)))
 (defmethod initialize-instance :after ((o vr-settings) &key)
   (let ((p (vr-get-generic-interface +vr-settings-version+)))
     (setf (slot-value o 'table) (make-array 12))
     (loop for i below 12
-          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))
-    (format t "loaded function table for ~s = ~s~%" 'vr-settings (table o))))
+          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))))
 (defun %get-settings-error-name-from-enum (table eError)
   (foreign-funcall-pointer (aref table 0) nil vr-settings-error eerror :string))
 
@@ -2673,14 +2656,13 @@
                            pchsettingskey (:pointer vr-settings-error) peerror
                            :void))
 
- (defclass vr-screenshots ()
-   ((table :reader table)))
+(defclass vr-screenshots ()
+  ((table :reader table)))
 (defmethod initialize-instance :after ((o vr-screenshots) &key)
   (let ((p (vr-get-generic-interface +vr-screenshots-version+)))
     (setf (slot-value o 'table) (make-array 7))
     (loop for i below 7
-          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))
-    (format t "loaded function table for ~s = ~s~%" 'vr-screenshots (table o))))
+          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))))
 (defun %request-screenshot (table pOutScreenshotHandle type pchPreviewFilename pchVRFilename)
   (foreign-funcall-pointer (aref table 0) nil (:pointer screenshot-handle-t)
                            poutscreenshothandle vr-screenshot-type type :string
@@ -2718,14 +2700,13 @@
                            pchsourcepreviewfilename :string pchsourcevrfilename
                            vr-screenshot-error))
 
- (defclass vr-resources ()
-   ((table :reader table)))
+(defclass vr-resources ()
+  ((table :reader table)))
 (defmethod initialize-instance :after ((o vr-resources) &key)
   (let ((p (vr-get-generic-interface +vr-resources-version+)))
     (setf (slot-value o 'table) (make-array 2))
     (loop for i below 2
-          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))
-    (format t "loaded function table for ~s = ~s~%" 'vr-resources (table o))))
+          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))))
 (defun %load-shared-resource (table pchResourceName pchBuffer unBufferLen)
   (foreign-funcall-pointer (aref table 0) nil :string pchresourcename :string
                            pchbuffer :uint32 unbufferlen :uint32))
@@ -2735,15 +2716,13 @@
                            pchresourcetypedirectory :string pchpathbuffer
                            :uint32 unbufferlen :uint32))
 
- (defclass vr-driver-manager ()
-   ((table :reader table)))
+(defclass vr-driver-manager ()
+  ((table :reader table)))
 (defmethod initialize-instance :after ((o vr-driver-manager) &key)
   (let ((p (vr-get-generic-interface +vr-driver-manager-version+)))
     (setf (slot-value o 'table) (make-array 2))
     (loop for i below 2
-          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))
-    (format t "loaded function table for ~s = ~s~%" 'vr-driver-manager
-            (table o))))
+          do (setf (aref (table o) i) (cffi:mem-aref p :pointer i)))))
 (defun %get-driver-count (table)
   (foreign-funcall-pointer (aref table 0) nil :uint32))
 

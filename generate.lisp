@@ -256,7 +256,7 @@
           do (incf (gethash (fix-name name) counts 0)))
     (loop for class in (reverse class-names)
           for methods = (gethash class classes)
-          do (format t " (defclass ~a ()~%  ((table :reader table)))~%"
+          do (format t "(defclass ~a ()~%  ((table :reader table)))~%"
                      (fix-name class))
           do (format t "~(~a~)~%"
                      `(defmethod initialize-instance ":after"
@@ -268,10 +268,7 @@
                                 (make-array ,(length methods)))
                           (loop for i below ,(length methods)
                                 do (setf (aref (table o) i)
-                                         ("cffi:mem-aref" p ":pointer" i)))
-                          (format t "\"loaded function table for ~s = ~s~%\""
-                                  ',(fix-name class)
-                                  (table o)))))
+                                         ("cffi:mem-aref" p ":pointer" i))))))
 
              (loop for (.n r p) in (reverse methods)
                    for index from 0
