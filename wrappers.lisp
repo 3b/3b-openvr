@@ -490,6 +490,15 @@
 (defun is-tracked-device-connected (index &key (system *system*))
   (%is-tracked-device-connected (table system) index))
 
+(defun get-controller-role-for-tracked-device-index (index &key (system *system*))
+  (%get-controller-role-for-tracked-device-index (table system) index))
+
+(defun get-tracked-device-index-for-controller-role (role &key (system *system*))
+  (let ((i (%get-tracked-device-index-for-controller-role (table system) role)))
+    (if (= i #xffffffff)
+        nil
+        i)))
+
 (defun get-tracked-device-class (index &key (system *system*))
   (%get-tracked-device-class (table system) index))
 
